@@ -1,5 +1,7 @@
 import math
 import pandas as pd
+from sqlalchemy import create_engine
+from sqlalchemy.types import Date
 
 sun_teff = 5778
 
@@ -21,4 +23,8 @@ def calculate_esi(row):
 
 df['esi'] = df.apply(calculate_esi, axis=1)
 
-df.to_csv("esis.csv", index=False)
+df["planet_updated"] = pd.to_datetime(df["planet_updated"])
+
+engine = create_engine("sqlite:///exoplanet_esi")
+
+df.to_sql("esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
