@@ -10,8 +10,6 @@ import argparse
 service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
 sun_teff = 5778
 
-engine = create_engine("sqlite:///exoplanet_catalogue.db")
-
 def retrieve_catalogue(engine: Engine):
     '''
     Retrieve the current catalogue using the Catalogue of Exoplanets API 
@@ -103,6 +101,8 @@ def fill_esi(engine: Engine):
     con=engine
     )
 
+    df["radius_estimated"] = df["radius"].isna()
+
     def calculate_esi(row):
         star_radius = row['star_radius']            # in solar radii
         star_teff = row['star_teff']                # in Kelvin
@@ -124,16 +124,14 @@ def fill_esi(engine: Engine):
 
     df["calculated_on"] = datetime.now()
 
-    engine = create_engine("sqlite:///exoplanet_catalogue.db")
-
-    df[["target_name", "esi", "creation_date", "calculated_on"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
+    df[["target_name", "esi", "creation_date", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
 
 def main():
     parser = argparse.ArgumentParser(description="Exoplanet catalogue utility")
-    parser.add_argument("--db", type=str, default="exoplanet_catalogue.db", help="SQLite database filename")
-    parser.add_argument("--retrieve", action="store_true", help="Retrieve full catalogue from TAP service")
-    parser.add_argument("--update", action="store_true", help="Update catalogue with new/modified entries")
-    parser.add_argument("--esi", action="store_true", help="Calculate ESI for all entries")
+    parser.add_argument("-d", "--db", type=str, default="exoplanet_catalogue.db", help="SQLite database filename")
+    parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue the Catalogue of Exoplanets")
+    parser.add_argument("-u", "--update", action="store_true", help="Update catalogue with new or modified exoplanet entries")
+    parser.add_argument("-e", "--esi", action="store_true", help="Calculate ESI for all entries and create new table")
     
     args = parser.parse_args()
     
