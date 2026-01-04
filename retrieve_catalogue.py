@@ -7,7 +7,6 @@ import numpy
 from datetime import datetime
 import argparse
 
-# add this to function def
 service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
 sun_teff = 5778
 
@@ -22,6 +21,8 @@ def retrieve_catalogue(engine: Engine):
     Returns:
         None
     '''
+
+    # Find exoplanets where relevant fields are not null and either mass or radius is not null
     query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
     FROM exoplanet.epn_core
     WHERE target_name IS NOT NULL
@@ -96,6 +97,7 @@ def update_catalogue(engine: Engine):
     index=False
     )
 
+    # Delete old duplicate entries of exoplanets where a new modified version is introduced
     with engine.begin() as conn:
         conn.exec_driver_sql("""
             DELETE FROM source_data
@@ -123,6 +125,7 @@ def fill_esi(engine: Engine):
     con=engine
     )
 
+    # store whether radius is in the exoplanets fields or not
     df["radius_estimated"] = df["radius"].isna()
 
     def calculate_esi(row):
@@ -132,6 +135,7 @@ def fill_esi(engine: Engine):
         planetary_radius = row['radius']  # in Earth radii
         planetary_mass = row['mass'] # in earth mass
 
+        # estimate radius with mass
         if pd.isna(planetary_radius):
             planetary_radius = planetary_mass ** (1/3)
 
@@ -144,6 +148,7 @@ def fill_esi(engine: Engine):
 
     df["esi"] = df.apply(calculate_esi, axis=1)
 
+    # store date calculated 
     df["calculated_on"] = datetime.now()
 
     df[["target_name", "esi", "creation_date", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
