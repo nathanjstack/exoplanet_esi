@@ -7,6 +7,7 @@ import numpy
 from datetime import datetime
 import argparse
 
+# add this to function def
 service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
 sun_teff = 5778
 
@@ -14,6 +15,12 @@ def retrieve_catalogue(engine: Engine):
     '''
     Retrieve the current catalogue using the Catalogue of Exoplanets API 
     that have the values required to calculate ESI, exporting it to an SQLite database.
+
+    Args:
+        engine (Engine): an SQLalchemy engine connected to the target SQLite database
+
+    Returns:
+        None
     '''
     query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
     FROM exoplanet.epn_core
@@ -41,12 +48,18 @@ def retrieve_catalogue(engine: Engine):
             dtype={"planet_updated": Date}
             )
 
-def update_catalogue(engine: Engine): # needs to accept a db 
+def update_catalogue(engine: Engine):
     '''
-    Update the 
+    Update the current catalogue by calling the Catalogue of Exoplanets API to 
+    check if the modification date of exoplanets are more recent than what is in
+    the local database, or if there have been any new exoplanets added.
+
+    Args:
+        engine (Engine): an SQLalchemy engine connected to the target SQLite database
+
+    Returns:
+        None
     '''
-    # Update any exoplanets if new data is found
-        # Read only the two columns needed
     dates = pd.read_sql(
         "SELECT MAX(modification_date) AS last_mod, "
         "MAX(creation_date) AS last_new "
@@ -56,8 +69,6 @@ def update_catalogue(engine: Engine): # needs to accept a db
 
     last_mod = dates["last_mod"].iloc[0]
     last_new = dates["last_new"].iloc[0]
-
-    service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
 
     query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
     FROM exoplanet.epn_core
@@ -96,6 +107,17 @@ def update_catalogue(engine: Engine): # needs to accept a db
         """)
 
 def fill_esi(engine: Engine):
+    '''
+    Create a new table in the target database and calculate and store 
+    the ESI for each relevant exoplanet using the two parameter formula,
+    approximating radius if neccesary.
+
+    Args:
+        engine (Engine): an SQLalchemy engine connected to the target SQLite database
+
+    Returns:
+        None
+    '''
     df = pd.read_sql(
     "SELECT * FROM source_data",
     con=engine
