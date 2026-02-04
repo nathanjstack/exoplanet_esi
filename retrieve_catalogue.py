@@ -23,6 +23,9 @@ def retrieve_catalogue(engine: Engine):
     '''
 
     # Find exoplanets where relevant fields are not null and either mass or radius is not null
+
+    print("Retrieving or updating completely new database...")
+
     query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
     FROM exoplanet.epn_core
     WHERE target_name IS NOT NULL
@@ -41,6 +44,9 @@ def retrieve_catalogue(engine: Engine):
     results = service.search(query)
     table = results.to_table()
     df = table.to_pandas()
+    
+    first_planet = df.iloc[0]["target_name"]
+    print(f"Successfully retrieved database with {first_planet} and {len(df)} other exoplanets.")
 
     df.to_sql("source_data", 
             index=False, 
@@ -48,6 +54,8 @@ def retrieve_catalogue(engine: Engine):
             if_exists="replace", 
             dtype={"planet_updated": Date}
             )
+    
+    print(f"Database stored in {engine.url}")
 
 def update_catalogue(engine: Engine):
     '''
@@ -71,6 +79,8 @@ def update_catalogue(engine: Engine):
     last_mod = dates["last_mod"].iloc[0]
     last_new = dates["last_new"].iloc[0]
 
+    print("Checking for any updates or new entries...")
+
     query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
     FROM exoplanet.epn_core
     WHERE (modification_date > '{last_mod}'
@@ -90,12 +100,19 @@ def update_catalogue(engine: Engine):
     table = results.to_table()
     updates_df = table.to_pandas()
 
+    if len(updates_df) > 0:
+        print(f"Added or updated {len(updates_df)} exoplanet entries.")
+    else:
+        print("No updates found.")
+
     updates_df.to_sql(
     "source_data",
     con=engine,
     if_exists="append",
     index=False
     )
+
+    print(f"Updates stored in {engine.url}")
 
     # Delete old duplicate entries of exoplanets where a new modified version is introduced
     with engine.begin() as conn:
@@ -146,12 +163,15 @@ def fill_esi(engine: Engine):
         esi = 1 - numpy.sqrt((flux_diff + radius_diff) / 2)
         return esi
 
+    print("Calculating Earth Similarity Index (ESI) for each exoplanet...")
     df["esi"] = df.apply(calculate_esi, axis=1)
 
     # store date calculated 
     df["calculated_on"] = datetime.now()
 
+    # should make 'exoplanet_esis' table name based on user input in future
     df[["target_name", "esi", "creation_date", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
+    print(f"ESIs successfully calculated and outputted in the 'exoplanet_esis' table of {engine.url}")
 
 def main():
     parser = argparse.ArgumentParser(description="Exoplanet catalogue utility")
