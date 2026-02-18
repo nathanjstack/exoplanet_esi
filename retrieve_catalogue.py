@@ -10,6 +10,10 @@ import argparse
 service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
 sun_teff = 5778
 
+# Constants for unit conversion
+JUPITER_TO_EARTH_MASS = 318.0      # 1 M_J ≈ 318 M_earth
+JUPITER_TO_EARTH_RADIUS = 11.21    # 1 R_J ≈ 11.21 R_earth
+
 def retrieve_catalogue(engine: Engine):
     '''
     Retrieve the current catalogue using the Catalogue of Exoplanets API 
@@ -125,7 +129,7 @@ def update_catalogue(engine: Engine):
             );
         """)
 
-def fill_esi(engine: Engine):
+def fill_esi(engine: Engine, ):
     '''
     Create a new table in the target database and calculate and store 
     the ESI for each relevant exoplanet using the two parameter formula,
@@ -149,8 +153,8 @@ def fill_esi(engine: Engine):
         star_radius = row['star_radius']            # in solar radii
         star_teff = row['star_teff']                # in Kelvin
         semi_major_axis = row['semi_major_axis']    # in AU
-        planetary_radius = row['radius']  # in Earth radii
-        planetary_mass = row['mass'] # in earth mass
+        planetary_radius = row['radius'] * JUPITER_TO_EARTH_RADIUS
+        planetary_mass = row['mass'] * JUPITER_TO_EARTH_MASS
 
         # estimate radius with mass
         if pd.isna(planetary_radius):
@@ -179,6 +183,7 @@ def main():
     parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue the Catalogue of Exoplanets")
     parser.add_argument("-u", "--update", action="store_true", help="Update catalogue with new or modified exoplanet entries")
     parser.add_argument("-e", "--esi", action="store_true", help="Calculate ESI for all entries and create new table")
+    parser.add_argument("-t", "--table", action="store_true", help="Specify table name for ESI calculations")
     
     args = parser.parse_args()
     
