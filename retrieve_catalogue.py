@@ -11,8 +11,8 @@ service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap")
 sun_teff = 5778
 
 # Constants for unit conversion
-JUPITER_TO_EARTH_MASS = 318.0      # 1 M_J ≈ 318 M_earth
-JUPITER_TO_EARTH_RADIUS = 11.21    # 1 R_J ≈ 11.21 R_earth
+JUPITER_TO_EARTH_MASS = 317.83      
+JUPITER_TO_EARTH_RADIUS = 11.209
 
 def retrieve_catalogue(engine: Engine):
     '''
