@@ -7,12 +7,8 @@ import numpy
 from datetime import datetime
 import argparse
 
-service = pyvo.dal.TAPService("http://voparis-tap-planeto.obspm.fr/tap") 
+service = pyvo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP") 
 sun_teff = 5778
-
-# Constants for unit conversion
-JUPITER_TO_EARTH_MASS = 317.83      
-JUPITER_TO_EARTH_RADIUS = 11.209
 
 def retrieve_catalogue(engine: Engine):
     '''
@@ -30,36 +26,44 @@ def retrieve_catalogue(engine: Engine):
 
     print("Retrieving or updating completely new database...")
 
-    query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
-    FROM exoplanet.epn_core
-    WHERE target_name IS NOT NULL
-        AND (mass IS NOT NULL
-        OR RADIUS IS NOT NULL)
+    query = f"""SELECT pl_name, pl_bmasse, pl_rade, pl_orbper, st_mass, st_rad, st_teff, pl_orbsmax, rowupdate, releasedate
+    FROM ps
+    WHERE pl_name IS NOT NULL
+        AND (pl_bmasse IS NOT NULL
+        OR pl_rade IS NOT NULL)
 
-        AND period IS NOT NULL
-        AND star_mass IS NOT NULL
-        AND star_radius IS NOT NULL
-        AND star_teff IS NOT NULL
-        AND semi_major_axis IS NOT NULL
-        AND modification_date IS NOT NULL
-        AND creation_date IS NOT NULL
+        AND pl_orbper IS NOT NULL
+        AND st_mass IS NOT NULL
+        AND st_rad IS NOT NULL
+        AND st_teff IS NOT NULL
+        AND pl_orbsmax IS NOT NULL
+        AND rowupdate IS NOT NULL
+        AND releasedate IS NOT NULL
         """
 
     results = service.search(query)
     table = results.to_table()
     df = table.to_pandas()
     
-    first_planet = df.iloc[0]["target_name"]
-    print(f"Successfully retrieved database with {first_planet} and {len(df)} other exoplanets.")
+    first_planet = df.iloc[0]["pl_name"]
+    print(f"Successfully retrieved database with {first_planet} and {len(df)-1} other exoplanets.")
+
+    df["rowupdate"] = pd.to_datetime(df["rowupdate"])
+    df["releasedate"] = pd.to_datetime(df["rowupdate"])
 
     df.to_sql("source_data", 
             index=False, 
             con=engine, 
-            if_exists="replace", 
-            dtype={"planet_updated": Date}
-            )
+            if_exists="replace",
+            dtype={
+                "rowupdate": Date,
+                "releasedate": Date
+            }
+    )
     
     print(f"Database stored in {engine.url}")
+
+engine = create_engine(f"sqlite:///test.db")
 
 def update_catalogue(engine: Engine):
     '''
@@ -74,35 +78,39 @@ def update_catalogue(engine: Engine):
         None
     '''
     dates = pd.read_sql(
-        "SELECT MAX(modification_date) AS last_mod, "
-        "MAX(creation_date) AS last_new "
+        "SELECT MAX(rowupdate) AS last_update, "
+        "MAX(releasedate) AS last_new "
         "FROM source_data;",
         con=engine
     )
 
-    last_mod = dates["last_mod"].iloc[0]
+    last_update = dates["last_update"].iloc[0]
     last_new = dates["last_new"].iloc[0]
 
     print("Checking for any updates or new entries...")
 
-    query = f"""SELECT target_name, mass, radius, period, star_mass, star_radius, star_teff, semi_major_axis, modification_date, creation_date
-    FROM exoplanet.epn_core
-    WHERE (modification_date > '{last_mod}'
-        OR creation_date > '{last_new}')
+    # equality check on dates neccesary as date does not use timestamps, so planets
+    # could be missed if updated halfway through the day otherwise
+    query = f"""SELECT pl_name, pl_bmasse, pl_rade, pl_orbper, st_mass, st_rad, st_teff, pl_orbsmax, rowupdate, releasedate
+    FROM ps
+    WHERE (rowupdate >= '{last_update}'
+        OR releasedate >= '{last_new}')
 
-        AND (mass IS NOT NULL
-        OR RADIUS IS NOT NULL)
-
-        AND period IS NOT NULL
-        AND star_mass IS NOT NULL
-        AND star_radius IS NOT NULL
-        AND star_teff IS NOT NULL
-        AND semi_major_axis IS NOT NULL
-        AND discovered IS NOT NULL"""
+        AND pl_name IS NOT NULL
+        AND pl_orbper IS NOT NULL
+        AND st_mass IS NOT NULL
+        AND st_rad IS NOT NULL
+        AND st_teff IS NOT NULL
+        AND pl_orbsmax IS NOT NULL
+        AND rowupdate IS NOT NULL
+        AND releasedate IS NOT NULL
+        """
 
     results = service.search(query)
     table = results.to_table()
     updates_df = table.to_pandas()
+
+    print(updates_df)
 
     if len(updates_df) > 0:
         print(f"Added or updated {len(updates_df)} exoplanet entries.")
@@ -116,8 +124,6 @@ def update_catalogue(engine: Engine):
     index=False
     )
 
-    print(f"Updates stored in {engine.url}")
-
     # Delete old duplicate entries of exoplanets where a new modified version is introduced
     with engine.begin() as conn:
         conn.exec_driver_sql("""
@@ -125,9 +131,11 @@ def update_catalogue(engine: Engine):
             WHERE rowid NOT IN (
                 SELECT MIN(rowid)
                 FROM source_data
-                GROUP BY target_name
+                GROUP BY pl_name
             );
         """)
+
+    print(f"Updates stored in {engine.url}")
 
 def fill_esi(engine: Engine, ):
     '''
@@ -147,14 +155,14 @@ def fill_esi(engine: Engine, ):
     )
 
     # store whether radius is in the exoplanets fields or not
-    df["radius_estimated"] = df["radius"].isna()
+    df["radius_estimated"] = df["pl_rade"].isna()
 
     def calculate_esi(row):
-        star_radius = row['star_radius']            # in solar radii
-        star_teff = row['star_teff']                # in Kelvin
-        semi_major_axis = row['semi_major_axis']    # in AU
-        planetary_radius = row['radius'] * JUPITER_TO_EARTH_RADIUS
-        planetary_mass = row['mass'] * JUPITER_TO_EARTH_MASS
+        star_radius = row['st_rad']            # in solar radii
+        star_teff = row['st_teff']             # in Kelvin
+        semi_major_axis = row['pl_orbsmax']    # in AU
+        planetary_radius = row['pl_rade']      # in Earth Rad
+        planetary_mass = row['pl_bmasse']     # Earth Mass
 
         # estimate radius with mass
         if pd.isna(planetary_radius):
@@ -174,7 +182,7 @@ def fill_esi(engine: Engine, ):
     df["calculated_on"] = datetime.now()
 
     # should make 'exoplanet_esis' table name based on user input in future
-    df[["target_name", "esi", "creation_date", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"planet_updated": Date})
+    df[["pl_name", "esi", "releasedate", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"calculated_on": Date})
     print(f"ESIs successfully calculated and outputted in the 'exoplanet_esis' table of {engine.url}")
 
 def main():
@@ -183,7 +191,7 @@ def main():
     parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue the Catalogue of Exoplanets")
     parser.add_argument("-u", "--update", action="store_true", help="Update catalogue with new or modified exoplanet entries")
     parser.add_argument("-e", "--esi", action="store_true", help="Calculate ESI for all entries and create new table")
-    parser.add_argument("-t", "--table", action="store_true", help="Specify table name for ESI calculations")
+    parser.add_argument("-t", "--table", default="exoplanet_catalogue.db", action="store_true", help="Specify table name for ESI calculations")
     
     args = parser.parse_args()
     
