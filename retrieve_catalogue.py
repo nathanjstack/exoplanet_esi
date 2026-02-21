@@ -12,7 +12,7 @@ sun_teff = 5778
 
 def retrieve_catalogue(engine: Engine):
     '''
-    Retrieve the current catalogue using the Catalogue of Exoplanets API 
+    Retrieve the current catalogue using the NASA Exoplanet Archive
     that have the values required to calculate ESI, exporting it to an SQLite database.
 
     Args:
@@ -67,7 +67,7 @@ engine = create_engine(f"sqlite:///test.db")
 
 def update_catalogue(engine: Engine):
     '''
-    Update the current catalogue by calling the Catalogue of Exoplanets API to 
+    Update the current catalogue by calling the NASA Exoplanet TAP to 
     check if the modification date of exoplanets are more recent than what is in
     the local database, or if there have been any new exoplanets added.
 
@@ -188,7 +188,7 @@ def fill_esi(engine: Engine, ):
 def main():
     parser = argparse.ArgumentParser(description="Exoplanet catalogue utility")
     parser.add_argument("-d", "--db", type=str, default="exoplanet_catalogue.db", help="SQLite database filename")
-    parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue the Catalogue of Exoplanets")
+    parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue from NASA Exoplanet Archive")
     parser.add_argument("-u", "--update", action="store_true", help="Update catalogue with new or modified exoplanet entries")
     parser.add_argument("-e", "--esi", action="store_true", help="Calculate ESI for all entries and create new table")
     parser.add_argument("-t", "--table", default="exoplanet_catalogue.db", action="store_true", help="Specify table name for ESI calculations")
