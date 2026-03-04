@@ -2,6 +2,7 @@ import pyvo
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy import Engine
+from sqlalchemy import text
 from sqlalchemy.types import Date
 import numpy
 from datetime import datetime
@@ -9,6 +10,34 @@ import argparse
 
 service = pyvo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP") 
 sun_teff = 5778
+
+def create_schema(engine):
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS source_data (
+                pl_name TEXT,
+                pl_bmasse REAL,
+                pl_rade REAL,
+                pl_orbper REAL,
+                st_mass REAL,
+                st_rad REAL,
+                st_teff REAL,
+                pl_orbsmax REAL,
+                rowupdate DATE,
+                releasedate DATE
+            );
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS exoplanet_esis (
+                pl_name TEXT,
+                esi REAL,
+                releasedate DATE,
+                calculated_on DATE,
+                radius_estimated INTEGER
+            );
+        """))
+
 
 def retrieve_catalogue(engine: Engine):
     '''
@@ -63,8 +92,6 @@ def retrieve_catalogue(engine: Engine):
     
     print(f"Database stored in {engine.url}")
 
-engine = create_engine(f"sqlite:///test.db")
-
 def update_catalogue(engine: Engine):
     '''
     Update the current catalogue by calling the NASA Exoplanet TAP to 
@@ -110,32 +137,31 @@ def update_catalogue(engine: Engine):
     table = results.to_table()
     updates_df = table.to_pandas()
 
-    print(updates_df)
-
-    if len(updates_df) > 0:
+    if len(updates_df) > 0:        
         print(f"Added or updated {len(updates_df)} exoplanet entries.")
+        # create a temporary 'staging' table to store updated entries
+        temp_table_name = "temp_updates"
+        updates_df.to_sql(temp_table_name, engine, if_exists='replace', index=False)
+
+        # delete entries that are in both source data and the staging table
+        with engine.begin() as conn:
+            delete_query = text(f"""
+            DELETE FROM source_data
+            WHERE pl_name IN (SELECT pl_name FROM {temp_table_name})
+            """)
+
+            # re-insert entries to source data
+            conn.execute(delete_query)
+            insert_query = text(f"""
+            INSERT INTO source_data
+            SELECT * FROM {temp_table_name}
+            """)
+
+            conn.execute(insert_query)
+
+            conn.execute(text(f"DROP TABLE {temp_table_name}"))
     else:
         print("No updates found.")
-
-    updates_df.to_sql(
-    "source_data",
-    con=engine,
-    if_exists="append",
-    index=False
-    )
-
-    # Delete old duplicate entries of exoplanets where a new modified version is introduced
-    with engine.begin() as conn:
-        conn.exec_driver_sql("""
-            DELETE FROM source_data
-            WHERE rowid NOT IN (
-                SELECT MIN(rowid)
-                FROM source_data
-                GROUP BY pl_name
-            );
-        """)
-
-    print(f"Updates stored in {engine.url}")
 
 def fill_esi(engine: Engine, ):
     '''
