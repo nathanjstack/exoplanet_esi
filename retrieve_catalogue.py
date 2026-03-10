@@ -105,9 +105,11 @@ def update_catalogue(engine: Engine):
         None
     '''
     dates = pd.read_sql(
-        "SELECT MAX(rowupdate) AS last_update, "
-        "MAX(releasedate) AS last_new "
-        "FROM source_data;",
+        """
+        SELECT MAX(rowupdate) AS last_update,
+        MAX(releasedate) AS last_new
+        FROM source_data;
+        """
         con=engine
     )
 
