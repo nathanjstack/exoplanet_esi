@@ -1,0 +1,52 @@
+[
+  {
+    "pl_name":"Kepler-296 e",
+    "esi":0.9547565918,
+    "rank":1
+  },
+  {
+    "pl_name":"Teegarden's Star b",
+    "esi":0.9502163981,
+    "rank":2
+  },
+  {
+    "pl_name":"TOI-700 d",
+    "esi":0.9388738685,
+    "rank":3
+  },
+  {
+    "pl_name":"Kepler-296 e",
+    "esi":0.9343631768,
+    "rank":4
+  },
+  {
+    "pl_name":"Kepler-296 e",
+    "esi":0.9343631768,
+    "rank":5
+  },
+  {
+    "pl_name":"Kepler-296 e",
+    "esi":0.9343631768,
+    "rank":6
+  },
+  {
+    "pl_name":"TOI-700 d",
+    "esi":0.9310261292,
+    "rank":7
+  },
+  {
+    "pl_name":"TOI-700 d",
+    "esi":0.9222967705,
+    "rank":8
+  },
+  {
+    "pl_name":"K2-3 d",
+    "esi":0.9201182845,
+    "rank":9
+  },
+  {
+    "pl_name":"TOI-700 e",
+    "esi":0.9147860269,
+    "rank":10
+  }
+]

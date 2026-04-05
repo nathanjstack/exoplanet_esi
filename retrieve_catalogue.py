@@ -190,13 +190,32 @@ def fill_esi(engine: Engine, ):
     df[["pl_name", "esi", "releasedate", "calculated_on", "radius_estimated"]].to_sql("exoplanet_esis", index=False, con=engine, if_exists="replace", dtype={"calculated_on": Date})
     print(f"ESIs successfully calculated and outputted in the 'exoplanet_esis' table of {engine.url}")
 
+def export_top10(engine: Engine, output_path="top10_esi.json"):
+    df = pd.read_sql(
+        "SELECT pl_name, esi FROM exoplanet_esis",
+        con=engine
+    )
+
+    top10 = df.sort_values("esi", ascending=False).head(10)
+
+    top10["rank"] = range(1, len(top10) + 1)
+
+    top10.to_json(
+        output_path,
+        orient="records",
+        indent=2
+    )
+
+    print(f"Top 10 ESI exported to {output_path}")
+
 def main():
     parser = argparse.ArgumentParser(description="Exoplanet catalogue utility")
     parser.add_argument("-d", "--db", type=str, default="exoplanet_catalogue.db", help="SQLite database filename")
     parser.add_argument("-r", "--retrieve", action="store_true", help="Retrieve full catalogue from NASA Exoplanet Archive")
     parser.add_argument("-u", "--update", action="store_true", help="Update catalogue with new or modified exoplanet entries")
     parser.add_argument("-e", "--esi", action="store_true", help="Calculate ESI for all entries and create new table")
-    parser.add_argument("-t", "--table", default="exoplanet_catalogue.db", action="store_true", help="Specify table name for ESI calculations")
+    parser.add_argument("-t", "--table", default="exoplanet_esis", action="store_true", help="Specify table name for ESI calculations")
+    parser.add_argument("--top10", action="store_true", help="Export top 10 ESI planets to JSON")
     
     args = parser.parse_args()
     
@@ -208,6 +227,8 @@ def main():
         update_catalogue(engine)
     if args.esi:
         fill_esi(engine)
+    if args.top10:
+        export_top10(engine)
 
 if __name__ == "__main__":
     main()
