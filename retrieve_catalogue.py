@@ -11,35 +11,6 @@ import argparse
 service = pyvo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP") 
 sun_teff = 5778
 
-# this function is currently not in use
-def create_schema(engine):
-    with engine.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS source_data (
-                pl_name TEXT,
-                pl_bmasse REAL,
-                pl_rade REAL,
-                pl_orbper REAL,
-                st_mass REAL,
-                st_rad REAL,
-                st_teff REAL,
-                pl_orbsmax REAL,
-                rowupdate DATE,
-                releasedate DATE
-            );
-        """))
-
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS exoplanet_esis (
-                pl_name TEXT,
-                esi REAL,
-                releasedate DATE,
-                calculated_on DATE,
-                radius_estimated INTEGER
-            );
-        """))
-
-
 def retrieve_catalogue(engine: Engine):
     '''
     Retrieve the current catalogue using the NASA Exoplanet Archive
@@ -70,8 +41,10 @@ def retrieve_catalogue(engine: Engine):
         AND rowupdate IS NOT NULL
         AND releasedate IS NOT NULL
         """
-
-    results = service.search(query)
+    try:
+        results = service.search(query)
+    except Exception as e:
+        raise RuntimeError("Failed to retrieve catalogue:") from e
     table = results.to_table()
     df = table.to_pandas()
     
@@ -136,7 +109,10 @@ def update_catalogue(engine: Engine):
         AND releasedate IS NOT NULL
         """
 
-    results = service.search(query)
+    try:
+        results = service.search(query)
+    except Exception as e:
+        raise RuntimeError(f"Failed to retrieve catalogue:") from e
     table = results.to_table()
     updates_df = table.to_pandas()
 
