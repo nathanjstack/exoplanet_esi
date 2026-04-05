@@ -11,6 +11,7 @@ import argparse
 service = pyvo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP") 
 sun_teff = 5778
 
+# this function is currently not in use
 def create_schema(engine):
     with engine.begin() as conn:
         conn.execute(text("""
@@ -109,7 +110,7 @@ def update_catalogue(engine: Engine):
         SELECT MAX(rowupdate) AS last_update,
         MAX(releasedate) AS last_new
         FROM source_data;
-        """
+        """,
         con=engine
     )
 
