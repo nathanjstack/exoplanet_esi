@@ -7,6 +7,7 @@ from sqlalchemy.types import Date
 import numpy
 from datetime import datetime
 import argparse
+import json
 
 service = pyvo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP") 
 sun_teff = 5778
@@ -200,11 +201,13 @@ def export_top10(engine: Engine, output_path="top10_esi.json"):
 
     top10["rank"] = range(1, len(top10) + 1)
 
-    top10.to_json(
-        output_path,
-        orient="records",
-        indent=2
-    )
+    data = {
+        "calculated_at": datetime.now().strftime("%B %d, %Y %I:%M %p"),
+        "results": top10.to_dict(orient="records")
+    }
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
 
     print(f"Top 10 ESI exported to {output_path}")
 
