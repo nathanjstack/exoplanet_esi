@@ -30,7 +30,8 @@ def retrieve_catalogue(engine: Engine):
 
     query = f"""SELECT pl_name, pl_bmasse, pl_rade, pl_orbper, st_mass, st_rad, st_teff, pl_orbsmax, rowupdate, releasedate
     FROM ps
-    WHERE pl_name IS NOT NULL
+    WHERE default_flag = 1
+        AND pl_name IS NOT NULL
         AND (pl_bmasse IS NOT NULL
         OR pl_rade IS NOT NULL)
 
@@ -97,7 +98,8 @@ def update_catalogue(engine: Engine):
     # could be missed if updated halfway through the day otherwise
     query = f"""SELECT pl_name, pl_bmasse, pl_rade, pl_orbper, st_mass, st_rad, st_teff, pl_orbsmax, rowupdate, releasedate
     FROM ps
-    WHERE (rowupdate >= '{last_update}'
+    WHERE default_flag = 1 AND
+    (rowupdate >= '{last_update}'
         OR releasedate >= '{last_new}')
 
         AND pl_name IS NOT NULL

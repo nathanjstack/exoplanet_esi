@@ -1,54 +1,54 @@
 {
-  "calculated_at": "April 07, 2026 09:47 AM",
+  "calculated_at": "April 07, 2026 10:17 AM",
   "results": [
-    {
-      "pl_name": "Kepler-296 e",
-      "esi": 0.954756591807629,
-      "rank": 1
-    },
-    {
-      "pl_name": "Teegarden's Star b",
-      "esi": 0.9502163980608198,
-      "rank": 2
-    },
     {
       "pl_name": "TOI-700 d",
       "esi": 0.9388738685156748,
-      "rank": 3
-    },
-    {
-      "pl_name": "Kepler-296 e",
-      "esi": 0.934363176775611,
-      "rank": 4
-    },
-    {
-      "pl_name": "Kepler-296 e",
-      "esi": 0.934363176775611,
-      "rank": 5
-    },
-    {
-      "pl_name": "Kepler-296 e",
-      "esi": 0.934363176775611,
-      "rank": 6
-    },
-    {
-      "pl_name": "TOI-700 d",
-      "esi": 0.93102612916843,
-      "rank": 7
-    },
-    {
-      "pl_name": "TOI-700 d",
-      "esi": 0.9222967704851959,
-      "rank": 8
-    },
-    {
-      "pl_name": "K2-3 d",
-      "esi": 0.9201182844577691,
-      "rank": 9
+      "rank": 1
     },
     {
       "pl_name": "TOI-700 e",
       "esi": 0.9147860269073459,
+      "rank": 2
+    },
+    {
+      "pl_name": "TRAPPIST-1 d",
+      "esi": 0.9078473124198899,
+      "rank": 3
+    },
+    {
+      "pl_name": "K2-72 e",
+      "esi": 0.9024746481947025,
+      "rank": 4
+    },
+    {
+      "pl_name": "GJ 3323 b",
+      "esi": 0.8998589432197516,
+      "rank": 5
+    },
+    {
+      "pl_name": "LP 890-9 c",
+      "esi": 0.8845819203425372,
+      "rank": 6
+    },
+    {
+      "pl_name": "L 98-59 f",
+      "esi": 0.8754177771789308,
+      "rank": 7
+    },
+    {
+      "pl_name": "GJ 1002 b",
+      "esi": 0.8621270777973155,
+      "rank": 8
+    },
+    {
+      "pl_name": "Ross 128 b",
+      "esi": 0.8608915046808737,
+      "rank": 9
+    },
+    {
+      "pl_name": "GJ 1061 c",
+      "esi": 0.8589697478049915,
       "rank": 10
     }
   ]
