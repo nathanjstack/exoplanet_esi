@@ -192,6 +192,14 @@ def fill_esi(engine: Engine, ):
     print(f"ESIs successfully calculated and outputted in the 'exoplanet_esis' table of {engine.url}")
 
 def export_top10(engine: Engine, output_path="top10_esi.json"):
+    '''
+    Export a JSON file of the planets with the top 10 highest ESI values
+    to be ingested by a JavaScript file that will eventually display them on my website.
+
+    Args:
+         engine (Engine): an SQLalchemy engine connected to the target SQLite database
+         output_path (string): the path to output the JSON file
+    '''
     df = pd.read_sql(
         "SELECT pl_name, esi FROM exoplanet_esis",
         con=engine
@@ -202,6 +210,7 @@ def export_top10(engine: Engine, output_path="top10_esi.json"):
     top10["rank"] = range(1, len(top10) + 1)
 
     data = {
+        # add human readable datetime for last update on website
         "calculated_at": datetime.now().strftime("%B %d, %Y %I:%M %p"),
         "results": top10.to_dict(orient="records")
     }
